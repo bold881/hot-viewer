@@ -1,10 +1,15 @@
 import json
 import scrapy
 import base64
+import time
+
+import sys
+sys.path.append("/home/daifenga/pylearn/weibotest/")
 
 from weibo.items import WeiboItem
 from scrapy.selector import Selector
 from datetime import datetime
+from scrapy.crawler import CrawlerProcess
 
 
 class SSOSpider(scrapy.Spider):
@@ -15,8 +20,8 @@ class SSOSpider(scrapy.Spider):
         return scrapy.FormRequest(
             url="https://passport.weibo.cn/sso/login",
             formdata={
-                'username': '',
-                'password': '',
+                'username': 'xxx',
+                'password': 'xxx',
                 'savestate': '1',
                 'ec': '0',
                 'pagerefer': '',
@@ -95,7 +100,12 @@ class SSOSpider(scrapy.Spider):
         index = response.meta['index']
         if index < 30:
             index += 1
-        pageurl = "http://weibo.cn/pub/topmblog?page=%d" % index
-        request = scrapy.http.Request(url=pageurl, callback=self.logged_in)
-        request.meta['index'] = index
-        yield request
+            pageurl = "http://weibo.cn/pub/topmblog?page=%d" % index
+            request = scrapy.http.Request(url=pageurl, dont_filter=False, callback=self.logged_in)
+            request.meta['index'] = index
+            yield request
+
+if __name__ == "__main__":       
+    process = CrawlerProcess()
+    process.crawl(SSOSpider)
+    process.start()
