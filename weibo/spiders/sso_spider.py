@@ -4,7 +4,7 @@ import base64
 import time
 
 import sys
-sys.path.append("/home/daifenga/pylearn/weibotest/")
+sys.path.append("/home/daifenga/pylearn/weibo/")
 
 from weibo.items import WeiboItem
 from scrapy.selector import Selector
@@ -20,8 +20,8 @@ class SSOSpider(scrapy.Spider):
         return scrapy.FormRequest(
             url="https://passport.weibo.cn/sso/login",
             formdata={
-                'username': 'xxx',
-                'password': 'xxx',
+                'username': '970778418@qq.com',
+                'password': 'dff881225@',
                 'savestate': '1',
                 'ec': '0',
                 'pagerefer': '',
@@ -105,7 +105,7 @@ class SSOSpider(scrapy.Spider):
             request.meta['index'] = index
             yield request
 
-if __name__ == "__main__":       
+if __name__ == "__main__":  
     process = CrawlerProcess()
     process.crawl(SSOSpider)
     process.start()
