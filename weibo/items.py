@@ -32,3 +32,21 @@ class WeiboItem(scrapy.Item):
     rh = scrapy.Field()             # original html data
     lt = scrapy.Field()             # time got by spider
     
+class UserItem(scrapy.Item):
+    userid = scrapy.Field()
+    photo = scrapy.Field()
+    ulevel = scrapy.Field()
+    medal = scrapy.Field()
+    nickname = scrapy.Field()
+    certificate = scrapy.Field()
+    sex = scrapy.Field()
+    area = scrapy.Field()
+    birthday = scrapy.Field()
+    reginfo = scrapy.Field()
+    marriagestate = scrapy.Field()
+    briefintro = scrapy.Field()
+    tag = scrapy.Field()
+    workexp = scrapy.Field()
+    education = scrapy.Field()
+    pc_home = scrapy.Field()
+    mobile_home = scrapy.Field()

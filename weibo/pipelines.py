@@ -6,6 +6,7 @@
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 
 import pymongo
+import MySQLdb
 
 from scrapy.conf import settings
 from scrapy.exceptions import DropItem
@@ -33,4 +34,19 @@ class MongoDBPipeline(object):
         else:
             self.collection.insert(dict(item))
     
+        return item
+
+class MysqlDBPipeline(object):
+    def __init__(self):
+        self.conn = MySQLdb.connect(
+            settings['MYSQL_HOST'],
+            settings['MYSQL_USER'],
+            settings['MYSQL_PSWD'],
+            settings['MYSQL_DBNAME'],
+            charset=settings['MYSQL_CHARSET'],
+            use_unicode=settings['MYSQL_UNICODE']
+        )
+        self.cursor = self.conn.cursor()
+
+    def process_item(self, item, spider):
         return item

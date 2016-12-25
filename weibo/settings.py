@@ -66,13 +66,23 @@ COOKIES_ENABLED = True
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'weibo.pipelines.MongoDBPipeline': 300,
+    #'weibo.pipelines.MongoDBPipeline': 300,
+    'weibo.pipelines.MysqlDBPipeline': 800,
 }
 
+# Mongodb settings -- daifenga
 MONGODB_SERVER = "localhost"
 MONGODB_PORT = 27017
 MONGODB_DB = "weibo"
 MONGODB_COLLECTION = "hottop"
+
+# Mysql settings -- daifenga
+MYSQL_HOST = "localhost"
+MYSQL_USER = "root"
+MYSQL_PSWD = "root"
+MYSQL_DBNAME = "weibo"
+MYSQL_CHARSET = "utf8"
+MYSQL_UNICODE = True
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
