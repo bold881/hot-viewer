@@ -50,3 +50,13 @@ class UserItem(scrapy.Item):
     education = scrapy.Field()
     pc_home = scrapy.Field()
     mobile_home = scrapy.Field()
+    
+class FolloweeItem(scrapy.Item):
+    userid = scrapy.Field()
+    followeeid = scrapy.Field()
+    followeeurl = scrapy.Field()
+
+class FanItem(scrapy.Item):
+    userid = scrapy.Field()
+    fansid = scrapy.Field()
+    fansurl = scrapy.Field()

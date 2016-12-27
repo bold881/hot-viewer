@@ -4,14 +4,16 @@ import json
 
 from scrapy.selector import Selector
 from weibo.items import UserItem
+from weibo.items import FolloweeItem
+from weibo.items import FanItem
 
-class RepoSpider(scrapy.Spider):
+class UserSpider(scrapy.Spider):
     name = 'weibouser'
     start_urls = ['https://passport.weibo.cn/signin/login']
     wurl = None
 
     def __init__(self, wurl=None, *args, **kwargs):
-        super(RepoSpider, self).__init__(*args, **kwargs)
+        super(UserSpider, self).__init__(*args, **kwargs)
         self.uinfo = wurl
 
     def parse(self, response):
@@ -47,9 +49,9 @@ class RepoSpider(scrapy.Spider):
     def parse_repopage(self, response):
         if response.status == 200:
             item = UserItem()
-            r1 = self.uinfo.rfind('/')
-            r2 = self.uinfo[:r1].rfind('/')
-            item['userid'] = self.uinfo[r2+1:r1]
+            r1 = response.url.rfind('/')
+            r2 = response.url[:r1].rfind('/')
+            item['userid'] = response.url[r2+1:r1]
             item['photo'] = response.selector.xpath(u'//img[@alt="头像"]/@src').extract()
             item['ulevel'] = response.selector.xpath(u'//a[text()="送Ta会员"]/parent::*/text()').extract_first()
 
@@ -77,7 +79,7 @@ class RepoSpider(scrapy.Spider):
                 if ri.find(u'生日:') != -1:
                     item['birthday'] = ri
                     continue
-                if ri.find(u'认证信息:') != -1:
+                if ri.find(u'认证信息：') != -1:
                     item['reginfo'] = ri
                     continue
                 if ri.find(u'感情状况:') != -1:
@@ -118,5 +120,125 @@ class RepoSpider(scrapy.Spider):
                     item['mobile_home'] = exi
                     continue
             yield item
+            
+            #get user following list
+            urlfollow = response.url
+            r1 = urlfollow.rfind('/')
+            urlfollow = urlfollow[:r1+1] + 'follow'
+            request = scrapy.http.Request(url=urlfollow, callback=self.parse_follow)
+            request.meta['index'] = 1
+            yield request
+
         else:
             print "!!!error status: " + response.status
+    
+    def parse_follow(self, response):
+        if response.status == 200:
+            r1 = response.url.rfind('/')
+            r2 = response.url[:r1].rfind('/')
+            curuserid = response.url[r2+1:r1]
+            
+            # get user in current page
+            followees = Selector(response).xpath(u'//a[contains(., "关注他") or contains(., "关注她")]/parent::*/a[1]')
+            for followee in followees:
+                item = FolloweeItem()
+                item['userid'] = curuserid
+                item['followeeid'] = followee.xpath('.//text()').extract_first()
+                item['followeeurl'] = followee.xpath('.//@href').extract_first()
+                yield item
+
+            # get total follow page
+            maxpage = response.selector.xpath('//input[@name="mp" and @type="hidden"]/@value').extract_first()
+            
+            if maxpage != None: # only one page
+                pageurl = "http://weibo.cn/%s/follow?page=2"%curuserid
+                request = scrapy.http.Request(url=pageurl, callback=self.loopparse_followee)
+                request.meta['maxpage'] = int(maxpage)
+                request.meta['index'] = 2
+                yield request
+
+
+    def loopparse_followee(self, response):
+        if response.status == 200:
+            r1 = response.url.rfind('/')
+            r2 = response.url[:r1].rfind('/')
+            curuserid = response.url[r2+1:r1]
+            
+            # get user in current page
+            followees = Selector(response).xpath(u'//a[contains(., "关注他") or contains(., "关注她")]/parent::*/a[1]')
+            for followee in followees:
+                item = FolloweeItem()
+                item['userid'] = curuserid
+                item['followeeid'] = followee.xpath('.//text()').extract_first()
+                item['followeeurl'] = followee.xpath('.//@href').extract_first()
+                yield item
+
+            maxpage = response.meta['maxpage']
+            index = response.meta['index']
+            if index < maxpage:
+                index += 1
+                pageurl = "http://weibo.cn/%s/follow?page=%d"%(curuserid,index)
+                request = scrapy.http.Request(url=pageurl, callback=self.loopparse_followee)
+                request.meta['maxpage'] = maxpage
+                request.meta['index'] = index
+                yield request
+            else:
+                # run get fans request
+                urlfans = response.url
+                r1 = urlfans.rfind('/')
+                urlfans = urlfans[:r1+1] + 'fans'
+                request = scrapy.http.Request(url=urlfans, callback=self.parse_fans)
+                request.meta['index'] = 1
+                yield request
+
+
+    def parse_fans(self, response):
+        if response.status == 200:
+            r1 = response.url.rfind('/')
+            r2 = response.url[:r1].rfind('/')
+            curuserid = response.url[r2+1:r1]
+            
+            # get user in current page
+            fans = Selector(response).xpath(u'//a[contains(., "关注他") or contains(., "关注她")]/parent::*/a[1]')
+            for fan in fans:
+                item = FanItem()
+                item['userid'] = curuserid
+                item['fansid'] = fan.xpath('.//text()').extract_first()
+                item['fansurl'] = fan.xpath('.//@href').extract_first()
+                yield item
+
+            # get total fans page
+            maxpage = response.selector.xpath('//input[@name="mp" and @type="hidden"]/@value').extract_first()
+            
+            if maxpage != None: # only one page
+                pageurl = "http://weibo.cn/%s/fans?page=2"%curuserid
+                request = scrapy.http.Request(url=pageurl, callback=self.loopparse_fans)
+                request.meta['maxpage'] = int(maxpage)
+                request.meta['index'] = 2
+                yield request
+
+
+    def loopparse_fans(self, response):
+        if response.status == 200:
+            r1 = response.url.rfind('/')
+            r2 = response.url[:r1].rfind('/')
+            curuserid = response.url[r2+1:r1]
+            
+            # get user in current page
+            fans = Selector(response).xpath(u'//a[contains(., "关注他") or contains(., "关注她")]/parent::*/a[1]')
+            for fan in fans:
+                item = FanItem()
+                item['userid'] = curuserid
+                item['fansid'] = fan.xpath('.//text()').extract_first()
+                item['fansurl'] = fan.xpath('.//@href').extract_first()
+                yield item
+
+            maxpage = response.meta['maxpage']
+            index = response.meta['index']
+            if index < maxpage:
+                index += 1
+                pageurl = "http://weibo.cn/%s/fans?page=%d"%(curuserid,index)
+                request = scrapy.http.Request(url=pageurl, callback=self.loopparse_fans)
+                request.meta['maxpage'] = maxpage
+                request.meta['index'] = index
+                yield request

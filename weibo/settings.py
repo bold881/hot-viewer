@@ -80,7 +80,7 @@ MONGODB_COLLECTION = "hottop"
 MYSQL_HOST = "localhost"
 MYSQL_USER = "root"
 MYSQL_PSWD = "root"
-MYSQL_DBNAME = "weibo"
+MYSQL_DBNAME = "webo"
 MYSQL_CHARSET = "utf8"
 MYSQL_UNICODE = True
 
