@@ -81,7 +81,7 @@ MYSQL_HOST = "localhost"
 MYSQL_USER = "root"
 MYSQL_PSWD = "root"
 MYSQL_DBNAME = "webo"
-MYSQL_CHARSET = "utf8"
+MYSQL_CHARSET = "utf8mb4"
 MYSQL_UNICODE = True
 
 # Enable and configure the AutoThrottle extension (disabled by default)

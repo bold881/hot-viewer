@@ -51,22 +51,33 @@ class MysqlDBPipeline(object):
         )
         self.cursor = self.conn.cursor()
     add_user = ("INSERT INTO user "
-                "VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', \
-                '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')")
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, "
+                "%s, %s, %s, %s, %s, %s, %s, %s)")
     
     add_followee = ("INSERT INTO follow"
                     "VALUES ('%s', '%s', '%s')")
+    
+    def get_userurl(self):
+        try:
+            self.cursor.execute("select followeeurl from follow where followeeid not in (select nickname from user) limit 1")
+            return self.cursor.fetchone()[0]
+        except MySQLdb.Error, e:
+            print "DB Error %d: %s" % (e.args[0], e.args[1])
+    def open_spider(self, spider):
+        spider.mySqlPipeline = self
     
     def process_item(self, item, spider):
 
         if spider.name == 'weibouser' and \
         isinstance(item, UserItem):
+            if item['nickname'] == None:
+                raise DropItem(item)
             try:
                 #check if item exist
-                self.cursor.execute("SELECT COUNT(*) FROM user where userid = %s"%item['userid'])
+                self.cursor.execute("SELECT COUNT(*) FROM user where userid = '%s'"%item['userid'])
                 if int(self.cursor.fetchone()[0]) > 0:
                     #print "%s exist!!!"%item['userid']
-                    return item
+                   return item
                 
                 #insert new data
                 data_user = (item['userid'], item.get('photo', ''), item.get('ulevel', ''), item.get('medal', ''), \
@@ -74,7 +85,9 @@ class MysqlDBPipeline(object):
                 item.get('birthday', ''), item.get('reginfo', ''), item.get('marriagestate', ''), \
                 item.get('briefintro', ''), item.get('tag', ''), item.get('workexp', ''), \
                 item.get('education', ''), item.get('pc_home', ''), item.get('mobile_home', ''))
+
                 self.cursor.execute(self.add_user, data_user)
+                #self.cursor.execute(errorsql)
                 self.conn.commit()
             except MySQLdb.Error, e:
                 print "DB Error %d: %s" % (e.args[0], e.args[1])

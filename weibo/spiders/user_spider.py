@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import scrapy
 import json
+import time
 
 from scrapy.selector import Selector
 from weibo.items import UserItem
@@ -14,7 +15,8 @@ class UserSpider(scrapy.Spider):
 
     def __init__(self, wurl=None, *args, **kwargs):
         super(UserSpider, self).__init__(*args, **kwargs)
-        self.uinfo = wurl
+        self.uhome = wurl
+        self.mySqlPipeline = None
 
     def parse(self, response):
         return scrapy.FormRequest(
@@ -43,7 +45,18 @@ class UserSpider(scrapy.Spider):
         return scrapy.http.Request(url=loginresulturl, callback=self.parse_sso1)
 
     def parse_sso1(self, response): # go to specific weibo page
-        request = scrapy.http.Request(url=self.uinfo, callback=self.parse_repopage)
+        #check arg wurl wether empty
+        if self.uhome == None:
+            self.uhome = self.mySqlPipeline.get_userurl()
+            
+        request = scrapy.http.Request(url=self.uhome, callback=self.parse_userhomepage)
+        return request
+    
+    def parse_userhomepage(self, response):
+        # from homepage to info
+        usrinfo = response.selector.xpath(u'//a[text()="资料"]/@href').extract_first()
+        usrinfo = "http://weibo.cn" + usrinfo
+        request = scrapy.http.Request(url=usrinfo, callback=self.parse_repopage)
         return request
 
     def parse_repopage(self, response):
@@ -52,7 +65,7 @@ class UserSpider(scrapy.Spider):
             r1 = response.url.rfind('/')
             r2 = response.url[:r1].rfind('/')
             item['userid'] = response.url[r2+1:r1]
-            item['photo'] = response.selector.xpath(u'//img[@alt="头像"]/@src').extract()
+            item['photo'] = response.selector.xpath(u'//img[@alt="头像"]/@src').extract_first()
             item['ulevel'] = response.selector.xpath(u'//a[text()="送Ta会员"]/parent::*/text()').extract_first()
 
             medalArray = response.selector.xpath(u'//a[text()="送Ta会员"]/parent::*/img/@alt').extract()
@@ -65,7 +78,7 @@ class UserSpider(scrapy.Spider):
             restArray = response.selector.xpath(u'//div[@class="tip" and text()="基本信息"]/following-sibling::*/text()').extract()
             for ri in restArray:
                 if ri.find(u'昵称:') != -1:
-                    item['nickname'] = ri
+                    item['nickname'] = ri[3:]
                     continue
                 if ri.find(u'认证:') != -1:
                     item['certificate'] = ri
@@ -88,6 +101,8 @@ class UserSpider(scrapy.Spider):
                 if ri.find(u'简介:') != -1:
                     item['briefintro'] = ri
                     continue
+            if item['nickname'] == None:
+                yield item
             
             tagArray = response.selector.xpath(u'//div[@class="c" and contains(., "标签:")]/a/text()').extract()
             ptag = ''
@@ -241,4 +256,8 @@ class UserSpider(scrapy.Spider):
                 request = scrapy.http.Request(url=pageurl, callback=self.loopparse_fans)
                 request.meta['maxpage'] = maxpage
                 request.meta['index'] = index
+                yield request
+            else:
+                homeurl = self.mySqlPipeline.get_userurl()
+                request = scrapy.http.Request(url=homeurl, callback=self.parse_userhomepage)
                 yield request
