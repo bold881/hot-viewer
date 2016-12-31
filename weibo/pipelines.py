@@ -59,7 +59,7 @@ class MysqlDBPipeline(object):
     
     def get_userurl(self):
         try:
-            self.cursor.execute("select followeeurl from follow where followeeid not in (select nickname from user) limit 1")
+            self.cursor.execute("select followeeurl from follow where (followeeid not in (select nickname from user)) and (followeeurl not in (select mobile_home from user)) limit 1")
             return self.cursor.fetchone()[0]
         except MySQLdb.Error, e:
             print "DB Error %d: %s" % (e.args[0], e.args[1])

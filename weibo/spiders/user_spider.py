@@ -10,6 +10,7 @@ from weibo.items import FanItem
 
 class UserSpider(scrapy.Spider):
     name = 'weibouser'
+    handle_httpstatus_list = [403]
     start_urls = ['https://passport.weibo.cn/signin/login']
     wurl = None
 
@@ -22,8 +23,8 @@ class UserSpider(scrapy.Spider):
         return scrapy.FormRequest(
             url="https://passport.weibo.cn/sso/login",
             formdata={
-                'username': 'xxx',
-                'password': 'xxx',
+                'username': '970778418@qq.com',
+                'password': 'dff881225@',
                 'savestate': '1',
                 'ec': '0',
                 'pagerefer': '',
@@ -53,6 +54,8 @@ class UserSpider(scrapy.Spider):
         return request
     
     def parse_userhomepage(self, response):
+        if response.status == 403:
+            time.sleep(3600)
         # from homepage to info
         usrinfo = response.selector.xpath(u'//a[text()="资料"]/@href').extract_first()
         usrinfo = "http://weibo.cn" + usrinfo
@@ -129,10 +132,10 @@ class UserSpider(scrapy.Spider):
 
             for exi in extraInfo:
                 if exi.find(u'互联网:') != -1:
-                    item['pc_home'] = exi
+                    item['pc_home'] = exi[4:]
                     continue
                 if exi.find(u'手机版:') != -1:
-                    item['mobile_home'] = exi
+                    item['mobile_home'] = exi[4:]
                     continue
             yield item
             
