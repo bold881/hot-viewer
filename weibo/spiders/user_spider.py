@@ -23,8 +23,8 @@ class UserSpider(scrapy.Spider):
         return scrapy.FormRequest(
             url="https://passport.weibo.cn/sso/login",
             formdata={
-                'username': '970778418@qq.com',
-                'password': 'dff881225@',
+                'username': 'xxx',
+                'password': 'xxx',
                 'savestate': '1',
                 'ec': '0',
                 'pagerefer': '',
